@@ -1,70 +1,743 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Clone Wars Shooter</title>
-  <style>
-    canvas {
-      background: black;
-      display: block;
-      margin: 0 auto;
-    }
-    body {
-      color: white;
-      font-family: monospace;
-      text-align: center;
-      background: #000;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clone Wars Shooter</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #1a202c; /* Dark background */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            overflow: hidden; /* Prevent scrolling */
+        }
+        canvas {
+            background-color: #000; /* Space background */
+            display: block;
+            border-radius: 8px;
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.5); /* Neon glow */
+            max-width: 95vw; /* Responsive width */
+            max-height: 80vh; /* Responsive height */
+        }
+        .game-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            padding: 1rem;
+        }
+        .ui-panel {
+            background-color: rgba(26, 32, 44, 0.8); /* Semi-transparent dark */
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            width: 100%;
+            max-width: 800px;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            color: #e2e8f0; /* Light text */
+            box-shadow: 0 0 10px rgba(0, 255, 255, 0.3);
+        }
+        .modal {
+            display: none; /* Hidden by default */
+            position: fixed; /* Stay in place */
+            z-index: 100; /* Sit on top */
+            left: 0;
+            top: 0;
+            width: 100%; /* Full width */
+            height: 100%; /* Full height */
+            overflow: auto; /* Enable scroll if needed */
+            background-color: rgba(0,0,0,0.8); /* Black w/ opacity */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            backdrop-filter: blur(5px); /* Frosted glass effect */
+        }
+        .modal-content {
+            background-color: #2d3748; /* Darker grey */
+            margin: auto;
+            padding: 2rem;
+            border: 2px solid #00ffff; /* Neon border */
+            border-radius: 12px;
+            width: 80%;
+            max-width: 500px;
+            box-shadow: 0 0 25px rgba(0, 255, 255, 0.7);
+            text-align: center;
+            color: #e2e8f0;
+        }
+        .modal-content h2 {
+            font-size: 2rem;
+            margin-bottom: 1.5rem;
+            color: #00ffff; /* Neon blue */
+            text-shadow: 0 0 8px rgba(0, 255, 255, 0.9);
+        }
+        .modal-content button {
+            background-color: #00ffff;
+            color: #1a202c;
+            padding: 0.75rem 1.5rem;
+            border-radius: 6px;
+            font-weight: bold;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+            box-shadow: 0 4px 10px rgba(0, 255, 255, 0.4);
+            margin: 0.5rem;
+        }
+        .modal-content button:hover {
+            background-color: #00e6e6;
+            transform: translateY(-2px);
+        }
+        .character-selection img {
+            width: 80px;
+            height: 80px;
+            object-fit: contain;
+            border: 2px solid transparent;
+            border-radius: 8px;
+            transition: border-color 0.3s ease;
+            cursor: pointer;
+            margin: 0.5rem;
+        }
+        .character-selection img.selected {
+            border-color: #00ffff;
+            box-shadow: 0 0 15px rgba(0, 255, 255, 0.8);
+        }
+        .weapon-button {
+            background-color: #4a5568;
+            color: #e2e8f0;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            margin: 0.25rem;
+            transition: background-color 0.3s ease;
+        }
+        .weapon-button.active {
+            background-color: #00ffff;
+            color: #1a202c;
+            box-shadow: 0 0 8px rgba(0, 255, 255, 0.5);
+        }
+    </style>
 </head>
 <body>
-  <h1>Clone Wars Shooter</h1>
-  <canvas id="game" width="800" height="400"></canvas>
+    <div class="game-container">
+        <div class="ui-panel">
+            <div id="scoreDisplay" class="text-xl">Score: 0</div>
+            <div id="healthDisplay" class="text-xl">Health: 100%</div>
+            <div id="waveDisplay" class="text-xl">Wave: 1</div> <div class="flex items-center">
+                <span class="mr-2 text-xl">Weapon:</span>
+                <button id="blasterBtn" class="weapon-button active">Blaster</button>
+                <button id="rifleBtn" class="weapon-button">Rifle</button>
+                <button id="heavyBlasterBtn" class="weapon-button">Heavy Blaster</button>
+            </div>
+        </div>
+        <canvas id="gameCanvas"></canvas>
 
-  <script>
-    const canvas = document.getElementById("game");
-    const ctx = canvas.getContext("2d");
+        <div id="characterSelectionModal" class="modal">
+            <div class="modal-content">
+                <h2>Select Your Clone Trooper</h2>
+                <div class="character-selection flex justify-center flex-wrap mb-4">
+                    <div class="flex flex-col items-center m-2">
+                        <img id="501st" src="https://placehold.co/100x100/0000FF/FFFFFF?text=501st" alt="501st Legion" data-class="501st" class="cursor-pointer rounded-lg shadow-md hover:shadow-xl transition-shadow duration-300">
+                        <span class="text-sm mt-1">501st Legion</span>
+                    </div>
+                    <div class="flex flex-col items-center m-2">
+                        <img id="41st" src="https://placehold.co/100x100/00FF00/FFFFFF?text=41st" alt="41st Legion" data-class="41st" class="cursor-pointer rounded-lg shadow-md hover:shadow-xl transition-shadow duration-300">
+                        <span class="text-sm mt-1">41st Legion</span>
+                    </div>
+                    <div class="flex flex-col items-center m-2">
+                        <img id="212th" src="https://placehold.co/100x100/FFFF00/000000?text=212th" alt="212th Star Division" data-class="212th" class="cursor-pointer rounded-lg shadow-md hover:shadow-xl transition-shadow duration-300">
+                        <span class="text-sm mt-1">212th Star Division</span>
+                    </div>
+                    <div class="flex flex-col items-center m-2">
+                        <img id="spaceMarine" src="https://placehold.co/100x100/800080/000000?text=Space+Marine" alt="Space Marine" data-class="spaceMarine" class="cursor-pointer rounded-lg shadow-md hover:shadow-xl transition-shadow duration-300">
+                        <span class="text-sm mt-1">Space Marine</span>
+                    </div>
+                </div>
+                <button id="startGameBtn" class="px-6 py-3 text-lg">Start Game</button>
+            </div>
+        </div>
 
-    let keys = {};
-    let bullets = [];
-    let droids = [];
-    let score = 0;
-    let health = 100;
-    let gameOver = false;
-    let gameState = "selecting";
-    let cloneClass = null;
+        <div id="gameOverModal" class="modal">
+            <div class="modal-content">
+                <h2>Game Over!</h2>
+                <p class="text-xl mb-4">Your Score: <span id="finalScore">0</span></p>
+                <button id="restartGameBtn" class="px-6 py-3 text-lg">Play Again</button>
+            </div>
+        </div>
+    </div>
 
-    // Load images
-    const bgImage = new Image();
-    bgImage.src = "tatooine.png";
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
 
-    const playerImage = new Image();
-    playerImage.src = "stormtrooper.png";
+        // Set canvas size
+        canvas.width = 1000;
+        canvas.height = 600;
 
-    const droidImage = new Image();
-    droidImage.src = "droid.png";
+        // UI Elements
+        const scoreDisplay = document.getElementById('scoreDisplay');
+        const healthDisplay = document.getElementById('healthDisplay');
+        const waveDisplay = document.getElementById('waveDisplay'); // New wave display element
+        const blasterBtn = document.getElementById('blasterBtn');
+        const rifleBtn = document.getElementById('rifleBtn');
+        const heavyBlasterBtn = document.getElementById('heavyBlasterBtn');
 
-    let imagesLoaded = 0;
-    [bgImage, playerImage, droidImage].forEach(img => {
-      img.onload = () => imagesLoaded++;
-    });
+        // Modals
+        const characterSelectionModal = document.getElementById('characterSelectionModal');
+        const gameOverModal = document.getElementById('gameOverModal');
+        const startGameBtn = document.getElementById('startGameBtn');
+        const restartGameBtn = document.getElementById('restartGameBtn');
+        const finalScoreDisplay = document.getElementById('finalScore');
 
-    document.addEventListener("keydown", (e) => {
-      keys[e.key] = true;
-      if (gameState === "selecting" && ["1", "2", "3"].includes(e.key)) {
-        selectClass(e.key);
-        gameState = "playing";
-      }
-    });
-    document.addEventListener("keyup", (e) => keys[e.key] = false);
+        // Game Variables
+        let player;
+        let enemies = [];
+        let playerProjectiles = [];
+        let enemyProjectiles = [];
+        let score = 0;
+        let gameRunning = false;
+        let selectedCloneClass = '501st'; // Default selected class
+        let currentWave = 0; // Tracks the current wave
+        let enemiesToSpawnInWave = []; // List of enemies to spawn in the current wave
+        let enemiesSpawnedInWave = 0; // How many enemies have been spawned from current wave
+        let waveSpawnInterval = 60; // Frames between enemy spawns in a wave
+        let waveSpawnTimer = 0; // Timer for spawning enemies within a wave
 
-    const player = {
-      x: 50,
-      y: 180,
-      width: 32,
-      height: 32,
-      fireRate: 500,
-      lastShot: 0,
-      bulletSpeed: 7,
-      draw() {
-        ctx.drawImage(playerImage, this
+        // Image Placeholders (User needs to replace these with actual generated images)
+        const imageAssets = {
+            // Clone troopers pointing right
+            '501st': 'https://placehold.co/80x80/0000FF/FFFFFF?text=501st_R',
+            '41st': 'https://placehold.co/80x80/00FF00/FFFFFF?text=41st_R',
+            '212th': 'https://placehold.co/80x80/FFFF00/000000?text=212th_R',
+            'spaceMarine': 'https://placehold.co/80x80/800080/000000?text=SM_R',
 
+            // Droids pointing left
+            'b1Droid': 'https://placehold.co/80x80/A0522D/FFFFFF?text=B1_L',
+            'superBattleDroid': 'https://placehold.co/80x80/808080/FFFFFF?text=SBD_L',
+            'commandoDroid': 'https://placehold.co/80x80/404040/FFFFFF?text=CD_L',
+
+            // Projectiles
+            'blasterProjectile': 'https://placehold.co/10x5/00FFFF/FFFFFF?text=', // Blue laser
+            'enemyProjectile': 'https://placehold.co/10x5/FF0000/FFFFFF?text=' // Red laser
+        };
+
+        // Wave Configuration
+        const waveConfig = [
+            // Wave 0 (Tutorial/Easy)
+            {
+                waveNumber: 1,
+                enemies: [
+                    { type: 'b1Droid', count: 5 },
+                ]
+            },
+            // Wave 1
+            {
+                waveNumber: 2,
+                enemies: [
+                    { type: 'b1Droid', count: 8 },
+                    { type: 'superBattleDroid', count: 2 }
+                ]
+            },
+            // Wave 2
+            {
+                waveNumber: 3,
+                enemies: [
+                    { type: 'b1Droid', count: 10 },
+                    { type: 'superBattleDroid', count: 4 },
+                    { type: 'commandoDroid', count: 1 }
+                ]
+            },
+            // Wave 3
+            {
+                waveNumber: 4,
+                enemies: [
+                    { type: 'b1Droid', count: 12 },
+                    { type: 'superBattleDroid', count: 6 },
+                    { type: 'commandoDroid', count: 3 }
+                ]
+            },
+            // Add more waves as desired
+            {
+                waveNumber: 5,
+                enemies: [
+                    { type: 'b1Droid', count: 15 },
+                    { type: 'superBattleDroid', count: 8 },
+                    { type: 'commandoDroid', count: 5 }
+                ]
+            }
+        ];
+
+
+        // Preload images (optional, but good practice for smoother gameplay)
+        const images = {};
+        let imagesLoaded = 0;
+        const totalImages = Object.keys(imageAssets).length;
+
+        function loadImage(key, url) {
+            const img = new Image();
+            img.src = url;
+            img.onload = () => {
+                imagesLoaded++;
+                if (imagesLoaded === totalImages) {
+                    // All images loaded, ready to show character selection
+                    characterSelectionModal.style.display = 'flex';
+                }
+            };
+            img.onerror = () => {
+                console.error(`Failed to load image: ${url}`);
+                imagesLoaded++; // Still increment to avoid blocking
+                if (imagesLoaded === totalImages) {
+                    characterSelectionModal.style.display = 'flex';
+                }
+            };
+            images[key] = img;
+        }
+
+        for (const key in imageAssets) {
+            loadImage(key, imageAssets[key]);
+        }
+
+        // Player Class
+        class Player {
+            constructor(x, y, width, height, selectedClass) {
+                this.x = x;
+                this.y = y;
+                this.width = width;
+                this.height = height;
+                this.health = 100;
+                this.speed = 5;
+                this.currentWeapon = 'blaster'; // Default weapon
+                this.weaponCooldown = 0;
+                this.selectedClass = selectedClass; // e.g., '501st', '41st'
+                this.image = images[this.selectedClass];
+            }
+
+            draw() {
+                if (this.image && this.image.complete) {
+                    ctx.drawImage(this.image, this.x, this.y, this.width, this.height);
+                } else {
+                    // Fallback if image not loaded
+                    ctx.fillStyle = 'blue';
+                    ctx.fillRect(this.x, this.y, this.width, this.height);
+                }
+            }
+
+            update() {
+                // Update weapon cooldown
+                if (this.weaponCooldown > 0) {
+                    this.weaponCooldown--;
+                }
+            }
+
+            shoot() {
+                let projectileSpeed;
+                let projectileDamage;
+                let cooldownTime;
+
+                switch (this.currentWeapon) {
+                    case 'blaster':
+                        projectileSpeed = 10;
+                        projectileDamage = 10;
+                        cooldownTime = 20; // Faster firing
+                        break;
+                    case 'rifle':
+                        projectileSpeed = 15;
+                        projectileDamage = 25;
+                        cooldownTime = 40; // Slower, more damage
+                        break;
+                    case 'heavyBlaster':
+                        projectileSpeed = 8;
+                        projectileDamage = 40;
+                        cooldownTime = 60; // Slowest, highest damage
+                        break;
+                }
+
+                if (this.weaponCooldown <= 0) {
+                    playerProjectiles.push(new Projectile(this.x + this.width, this.y + this.height / 2 - 2.5, 10, 5, projectileSpeed, 'right', projectileDamage, 'player'));
+                    this.weaponCooldown = cooldownTime;
+                }
+            }
+
+            takeDamage(amount) {
+                this.health -= amount;
+                if (this.health <= 0) {
+                    this.health = 0;
+                    gameOver();
+                }
+                healthDisplay.textContent = `Health: ${this.health}%`;
+            }
+        }
+
+        // Enemy Class
+        class Enemy {
+            constructor(x, y, width, height, type) {
+                this.x = x;
+                this.y = y;
+                this.width = width;
+                this.height = height;
+                this.type = type; // 'b1Droid', 'superBattleDroid', 'commandoDroid'
+                this.health = 0;
+                this.speed = 0;
+                this.fireRate = 0;
+                this.image = images[this.type];
+
+                // Set properties based on type
+                switch (this.type) {
+                    case 'b1Droid':
+                        this.health = 30;
+                        this.speed = 1;
+                        this.fireRate = 120; // Every 2 seconds
+                        break;
+                    case 'superBattleDroid':
+                        this.health = 80;
+                        this.speed = 0.8;
+                        this.fireRate = 90; // Every 1.5 seconds
+                        break;
+                    case 'commandoDroid':
+                        this.health = 50;
+                        this.speed = 1.5;
+                        this.fireRate = 60; // Every 1 second
+                        break;
+                }
+                this.shootCooldown = Math.random() * this.fireRate; // Initial random cooldown
+            }
+
+            draw() {
+                if (this.image && this.image.complete) {
+                    ctx.drawImage(this.image, this.x, this.y, this.width, this.height);
+                } else {
+                    // Fallback if image not loaded
+                    ctx.fillStyle = 'red';
+                    ctx.fillRect(this.x, this.y, this.width, this.height);
+                }
+            }
+
+            update() {
+                this.x -= this.speed; // Move left
+
+                // Enemy shooting logic
+                this.shootCooldown--;
+                if (this.shootCooldown <= 0) {
+                    this.shoot();
+                    this.shootCooldown = this.fireRate + Math.random() * this.fireRate / 2; // Reset with some variance
+                }
+            }
+
+            shoot() {
+                let projectileSpeed = 5;
+                let projectileDamage = 15;
+                enemyProjectiles.push(new Projectile(this.x, this.y + this.height / 2 - 2.5, 10, 5, projectileSpeed, 'left', projectileDamage, 'enemy'));
+            }
+
+            takeDamage(amount) {
+                this.health -= amount;
+                if (this.health <= 0) {
+                    return true; // Enemy defeated
+                }
+                return false;
+            }
+        }
+
+        // Projectile Class
+        class Projectile {
+            constructor(x, y, width, height, speed, direction, damage, owner) {
+                this.x = x;
+                this.y = y;
+                this.width = width;
+                this.height = height;
+                this.speed = speed;
+                this.direction = direction; // 'left' or 'right'
+                this.damage = damage;
+                this.owner = owner; // 'player' or 'enemy'
+                this.image = (owner === 'player') ? images['blasterProjectile'] : images['enemyProjectile'];
+            }
+
+            draw() {
+                if (this.image && this.image.complete) {
+                    ctx.drawImage(this.image, this.x, this.y, this.width, this.height);
+                } else {
+                    // Fallback
+                    ctx.fillStyle = (this.owner === 'player') ? 'cyan' : 'red';
+                    ctx.fillRect(this.x, this.y, this.width, this.height);
+                }
+            }
+
+            update() {
+                if (this.direction === 'right') {
+                    this.x += this.speed;
+                } else {
+                    this.x -= this.speed;
+                }
+            }
+        }
+
+        // Input Handling
+        const keys = {
+            ArrowUp: false,
+            ArrowDown: false,
+            ArrowLeft: false,
+            ArrowRight: false,
+            Space: false,
+            Digit1: false, // For weapon switching
+            Digit2: false,
+            Digit3: false
+        };
+
+        document.addEventListener('keydown', (e) => {
+            if (keys.hasOwnProperty(e.code)) {
+                keys[e.code] = true;
+            }
+        });
+
+        document.addEventListener('keyup', (e) => {
+            if (keys.hasOwnProperty(e.code)) {
+                keys[e.code] = false;
+            }
+        });
+
+        // Weapon switching event listeners
+        blasterBtn.addEventListener('click', () => switchWeapon('blaster'));
+        rifleBtn.addEventListener('click', () => switchWeapon('rifle'));
+        heavyBlasterBtn.addEventListener('click', () => switchWeapon('heavyBlaster'));
+
+        function switchWeapon(weaponType) {
+            if (!player) return; // Ensure player exists
+            player.currentWeapon = weaponType;
+            // Update active button styling
+            blasterBtn.classList.remove('active');
+            rifleBtn.classList.remove('active');
+            heavyBlasterBtn.classList.remove('active');
+            document.getElementById(`${weaponType}Btn`).classList.add('active');
+        }
+
+        // Game Loop
+        function gameLoop() {
+            if (!gameRunning) return;
+
+            // Clear canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Update player
+            if (keys.ArrowUp && player.y > 0) player.y -= player.speed;
+            if (keys.ArrowDown && player.y + player.height < canvas.height) player.y += player.speed;
+            if (keys.ArrowLeft && player.x > 0) player.x -= player.speed;
+            if (keys.ArrowRight && player.x + player.width < canvas.width / 2) player.x += player.speed; // Limit player to left half
+            if (keys.Space) player.shoot();
+
+            // Weapon switching with number keys
+            if (keys.Digit1) switchWeapon('blaster');
+            if (keys.Digit2) switchWeapon('rifle');
+            if (keys.Digit3) switchWeapon('heavyBlaster');
+
+            player.update();
+            player.draw();
+
+            // Update and draw player projectiles
+            for (let i = 0; i < playerProjectiles.length; i++) {
+                const projectile = playerProjectiles[i];
+                projectile.update();
+                projectile.draw();
+
+                // Remove if off-screen
+                if (projectile.x > canvas.width) {
+                    playerProjectiles.splice(i, 1);
+                    i--;
+                }
+            }
+
+            // Update and draw enemies
+            for (let i = 0; i < enemies.length; i++) {
+                const enemy = enemies[i];
+                enemy.update();
+                enemy.draw();
+
+                // Remove if off-screen or defeated
+                if (enemy.x + enemy.width < 0) {
+                    enemies.splice(i, 1);
+                    i--;
+                }
+            }
+
+            // Update and draw enemy projectiles
+            for (let i = 0; i < enemyProjectiles.length; i++) {
+                const projectile = enemyProjectiles[i];
+                projectile.update();
+                projectile.draw();
+
+                // Remove if off-screen
+                if (projectile.x < 0) {
+                    enemyProjectiles.splice(i, 1);
+                    i--;
+                }
+            }
+
+            // Collision Detection: Player Projectiles vs Enemies
+            for (let i = 0; i < playerProjectiles.length; i++) {
+                const p = playerProjectiles[i];
+                for (let j = 0; j < enemies.length; j++) {
+                    const e = enemies[j];
+                    if (
+                        p.x < e.x + e.width &&
+                        p.x + p.width > e.x &&
+                        p.y < e.y + e.height &&
+                        p.y + p.height > e.y
+                    ) {
+                        // Collision!
+                        playerProjectiles.splice(i, 1); // Remove projectile
+                        i--;
+                        if (e.takeDamage(p.damage)) {
+                            // Enemy defeated
+                            enemies.splice(j, 1);
+                            j--;
+                            score += 10; // Increase score
+                            scoreDisplay.textContent = `Score: ${score}`;
+                        }
+                        break; // Only hit one enemy per projectile
+                    }
+                }
+            }
+
+            // Collision Detection: Enemy Projectiles vs Player
+            for (let i = 0; i < enemyProjectiles.length; i++) {
+                const p = enemyProjectiles[i];
+                if (
+                    p.x < player.x + player.width &&
+                    p.x + p.width > player.x &&
+                    p.y < player.y + player.height &&
+                    p.y + p.height > player.y
+                ) {
+                    // Collision!
+                    enemyProjectiles.splice(i, 1); // Remove projectile
+                    i--;
+                    player.takeDamage(p.damage); // Player takes damage
+                }
+            }
+
+            // Wave Management
+            if (enemies.length === 0 && enemiesToSpawnInWave.length === 0 && gameRunning) {
+                // All enemies from current wave defeated and none left to spawn
+                startNextWave();
+            } else if (enemiesToSpawnInWave.length > 0 && gameRunning) {
+                // Still enemies to spawn in the current wave
+                waveSpawnTimer++;
+                if (waveSpawnTimer >= waveSpawnInterval) {
+                    spawnEnemyFromWave();
+                    waveSpawnTimer = 0;
+                }
+            }
+
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        // Function to start the next wave
+        function startNextWave() {
+            currentWave++;
+            if (currentWave > waveConfig.length) {
+                // All waves completed - potentially show a "You Win!" screen or loop waves
+                console.log("All waves completed! You win!");
+                // For now, let's just loop back to the first wave, or you can implement a win state.
+                // currentWave = 1; // Uncomment to loop waves
+                // gameOver(); // Uncomment to end game after all waves
+                // For this example, we'll just stop spawning new enemies for now.
+                gameRunning = false; // Stop the game loop
+                finalScoreDisplay.textContent = score;
+                gameOverModal.style.display = 'flex';
+                return;
+            }
+
+            const waveData = waveConfig[currentWave - 1];
+            waveDisplay.textContent = `Wave: ${waveData.waveNumber}`;
+            enemiesToSpawnInWave = [];
+            enemiesSpawnedInWave = 0;
+
+            // Populate enemiesToSpawnInWave based on current wave config
+            waveData.enemies.forEach(enemyGroup => {
+                for (let i = 0; i < enemyGroup.count; i++) {
+                    enemiesToSpawnInWave.push(enemyGroup.type);
+                }
+            });
+
+            // Shuffle the enemies to be spawned for more varied appearance
+            for (let i = enemiesToSpawnInWave.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [enemiesToSpawnInWave[i], enemiesToSpawnInWave[j]] = [enemiesToSpawnInWave[j], enemiesToSpawnInWave[i]];
+            }
+
+            console.log(`Starting Wave ${currentWave} with ${enemiesToSpawnInWave.length} enemies.`);
+        }
+
+        // Spawn Enemy Function (now draws from enemiesToSpawnInWave)
+        function spawnEnemyFromWave() {
+            if (enemiesToSpawnInWave.length > 0) {
+                const enemyType = enemiesToSpawnInWave.shift(); // Get the next enemy type
+                const x = canvas.width;
+                const y = Math.random() * (canvas.height - 80); // Random Y position
+                enemies.push(new Enemy(x, y, 80, 80, enemyType));
+                enemiesSpawnedInWave++;
+            }
+        }
+
+
+        // Game Start and End Functions
+        function startGame() {
+            score = 0;
+            currentWave = 0; // Reset wave for new game
+            player = new Player(50, canvas.height / 2 - 40, 80, 80, selectedCloneClass);
+            enemies = [];
+            playerProjectiles = [];
+            enemyProjectiles = [];
+            healthDisplay.textContent = `Health: ${player.health}%`;
+            scoreDisplay.textContent = `Score: ${score}`;
+            waveDisplay.textContent = `Wave: ${currentWave + 1}`; // Display initial wave
+            gameRunning = true;
+            characterSelectionModal.style.display = 'none'; // Hide selection modal
+            gameOverModal.style.display = 'none'; // Hide game over modal
+            switchWeapon('blaster'); // Reset weapon to blaster
+            startNextWave(); // Start the first wave
+            gameLoop();
+        }
+
+        function gameOver() {
+            gameRunning = false;
+            finalScoreDisplay.textContent = score;
+            gameOverModal.style.display = 'flex'; // Show game over modal
+        }
+
+        // Character Selection Logic
+        const characterImages = document.querySelectorAll('.character-selection img');
+        characterImages.forEach(img => {
+            img.addEventListener('click', () => {
+                // Remove selected class from all images
+                characterImages.forEach(i => i.classList.remove('selected'));
+                // Add selected class to the clicked image
+                img.classList.add('selected');
+                selectedCloneClass = img.dataset.class;
+            });
+        });
+
+        // Default selection on load
+        document.getElementById('501st').classList.add('selected');
+
+        startGameBtn.addEventListener('click', startGame);
+        restartGameBtn.addEventListener('click', startGame);
+
+        // Responsive Canvas
+        window.addEventListener('resize', () => {
+            // You might want to adjust game element positions or scale here
+            // For simplicity, we'll keep fixed canvas size for now,
+            // but the flexbox layout handles overall responsiveness.
+        });
+
+        // Initialize game on window load (show character selection first)
+        window.onload = () => {
+            // The image preloading logic will show the modal when done.
+            // If images are already cached, it will appear quickly.
+        };
+
+    </script>
+</body>
+</html>
