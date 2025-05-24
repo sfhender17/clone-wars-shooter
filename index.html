@@ -126,7 +126,8 @@
         <div class="ui-panel">
             <div id="scoreDisplay" class="text-xl">Score: 0</div>
             <div id="healthDisplay" class="text-xl">Health: 100%</div>
-            <div id="waveDisplay" class="text-xl">Wave: 1</div> <div class="flex items-center">
+            <div id="waveDisplay" class="text-xl">Wave: 1</div>
+            <div class="flex items-center">
                 <span class="mr-2 text-xl">Weapon:</span>
                 <button id="blasterBtn" class="weapon-button active">Blaster</button>
                 <button id="rifleBtn" class="weapon-button">Rifle</button>
@@ -140,19 +141,19 @@
                 <h2>Select Your Clone Trooper</h2>
                 <div class="character-selection flex justify-center flex-wrap mb-4">
                     <div class="flex flex-col items-center m-2">
-                        <img id="501st" src="https://placehold.co/100x100/0000FF/FFFFFF?text=501st" alt="501st Legion" data-class="501st" class="cursor-pointer rounded-lg shadow-md hover:shadow-xl transition-shadow duration-300">
+                        <img id="501st" src="501st_clone_right.png" alt="501st Legion" data-class="501st" class="cursor-pointer rounded-lg shadow-md hover:shadow-xl transition-shadow duration-300">
                         <span class="text-sm mt-1">501st Legion</span>
                     </div>
                     <div class="flex flex-col items-center m-2">
-                        <img id="41st" src="https://placehold.co/100x100/00FF00/FFFFFF?text=41st" alt="41st Legion" data-class="41st" class="cursor-pointer rounded-lg shadow-md hover:shadow-xl transition-shadow duration-300">
+                        <img id="41st" src="41st_clone_right.png" alt="41st Legion" data-class="41st" class="cursor-pointer rounded-lg shadow-md hover:shadow-xl transition-shadow duration-300">
                         <span class="text-sm mt-1">41st Legion</span>
                     </div>
                     <div class="flex flex-col items-center m-2">
-                        <img id="212th" src="https://placehold.co/100x100/FFFF00/000000?text=212th" alt="212th Star Division" data-class="212th" class="cursor-pointer rounded-lg shadow-md hover:shadow-xl transition-shadow duration-300">
+                        <img id="212th" src="212th_clone_right.png" alt="212th Star Division" data-class="212th" class="cursor-pointer rounded-lg shadow-md hover:shadow-xl transition-shadow duration-300">
                         <span class="text-sm mt-1">212th Star Division</span>
                     </div>
                     <div class="flex flex-col items-center m-2">
-                        <img id="spaceMarine" src="https://placehold.co/100x100/800080/000000?text=Space+Marine" alt="Space Marine" data-class="spaceMarine" class="cursor-pointer rounded-lg shadow-md hover:shadow-xl transition-shadow duration-300">
+                        <img id="spaceMarine" src="space_marine_clone_right.png" alt="Space Marine" data-class="spaceMarine" class="cursor-pointer rounded-lg shadow-md hover:shadow-xl transition-shadow duration-300">
                         <span class="text-sm mt-1">Space Marine</span>
                     </div>
                 </div>
@@ -206,20 +207,20 @@
         let waveSpawnInterval = 60; // Frames between enemy spawns in a wave
         let waveSpawnTimer = 0; // Timer for spawning enemies within a wave
 
-        // Image Placeholders (User needs to replace these with actual generated images)
+        // Image Paths (You need to create these images and place them in the same directory as this HTML file)
         const imageAssets = {
-            // Clone troopers pointing right
-            '501st': 'https://placehold.co/80x80/0000FF/FFFFFF?text=501st_R',
-            '41st': 'https://placehold.co/80x80/00FF00/FFFFFF?text=41st_R',
-            '212th': 'https://placehold.co/80x80/FFFF00/000000?text=212th_R',
-            'spaceMarine': 'https://placehold.co/80x80/800080/000000?text=SM_R',
+            // Clone troopers pointing right (e.g., "501st_clone_right.png")
+            '501st': '501st_clone_right.png',
+            '41st': '41st_clone_right.png',
+            '212th': '212th_clone_right.png',
+            'spaceMarine': 'space_marine_clone_right.png',
 
-            // Droids pointing left
-            'b1Droid': 'https://placehold.co/80x80/A0522D/FFFFFF?text=B1_L',
-            'superBattleDroid': 'https://placehold.co/80x80/808080/FFFFFF?text=SBD_L',
-            'commandoDroid': 'https://placehold.co/80x80/404040/FFFFFF?text=CD_L',
+            // Droids pointing left (e.g., "b1_droid_left.png")
+            'b1Droid': 'b1_droid_left.png',
+            'superBattleDroid': 'super_battle_droid_left.png',
+            'commandoDroid': 'commando_droid_left.png',
 
-            // Projectiles
+            // Projectiles (simple colored rectangles, no image needed, but kept for consistency)
             'blasterProjectile': 'https://placehold.co/10x5/00FFFF/FFFFFF?text=', // Blue laser
             'enemyProjectile': 'https://placehold.co/10x5/FF0000/FFFFFF?text=' // Red laser
         };
@@ -288,6 +289,8 @@
             };
             img.onerror = () => {
                 console.error(`Failed to load image: ${url}`);
+                // Fallback to placeholder if image fails to load
+                images[key] = null; // Mark as failed to load image
                 imagesLoaded++; // Still increment to avoid blocking
                 if (imagesLoaded === totalImages) {
                     characterSelectionModal.style.display = 'flex';
@@ -319,7 +322,7 @@
                 if (this.image && this.image.complete) {
                     ctx.drawImage(this.image, this.x, this.y, this.width, this.height);
                 } else {
-                    // Fallback if image not loaded
+                    // Fallback if image not loaded or failed
                     ctx.fillStyle = 'blue';
                     ctx.fillRect(this.x, this.y, this.width, this.height);
                 }
@@ -409,7 +412,7 @@
                 if (this.image && this.image.complete) {
                     ctx.drawImage(this.image, this.x, this.y, this.width, this.height);
                 } else {
-                    // Fallback if image not loaded
+                    // Fallback if image not loaded or failed
                     ctx.fillStyle = 'red';
                     ctx.fillRect(this.x, this.y, this.width, this.height);
                 }
